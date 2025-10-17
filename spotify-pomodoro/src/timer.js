@@ -53,4 +53,76 @@ const Timer = () => {
             // TODO: trigger break music/playlist here
         }
     }, [mode, focusTime, breakTime]);
-}   
+
+    // timer control functions //
+    // start the timer
+    const startTimeer = () => setIsRunning(true);
+    // pause the timer
+    const pauseTimer = () => setIsRunning(flase);
+    // stop the timer 
+    const resetTimer = () => {
+        setIsRunning(false);
+        // reset time based on current mode
+        setTimeLeft(mode === 'focus' ? focusTime : breakTime);
+    };
+
+    // format seconds into mm:ss display
+    const formatTime = (seconds) => {
+        // calculate minutes 
+        const mins = Math.floor(seconds / 60);
+        // calculate remaining seconds
+        const secs = seconds % 60;
+        //format as mm:ss
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    return (
+        <div className='timer-container text-center'>
+            {/* display current mode (focus time/break time)*/}
+            <div className={'mode-indicator ${mode} mb-4'}>
+                {mode === 'focus' ? 'Focus Time' : 'Break Time'}
+            </div>
+
+            {/* main timer display - large monospace font for readability */}
+            <div className="text-6xl font-mono mb-6">
+                {formatTime(timeLeft)}
+            </div>
+
+            {/* timer control buttons */}
+            <div className="controls space-x-4">
+                {/* start button - disabled when timer is already running */}
+                <button
+                    onClick={startTimer}
+                    disabled={isRunning}
+                    className="bg-green-500 text-white px-4 py-2 rounded disabled:bg-gray-400"
+                >
+                    start
+                </button>
+
+                {/* pause button - disabled when timer isn't running */}
+                <button
+                    onClick={pauseTimer}
+                    disabled={!isRunning}
+                    className="bg-yellow-500 text-white px-4 py-2 rounded disabled:bg-gray-400"
+                >
+                    pause
+                </button>
+
+                {/* reset button - always enabled */}
+                <button
+                    onClick={resetTimer}
+                    className="bg-red-500 text-white px-4 py-2 rounded"
+                >
+                    reset
+                </button>
+            </div>
+
+            {/* session counter display */}
+            <div className="sessions mt-4 text-lg">
+                Sessions Completed: {sessionsCompleted}
+            </div>
+        </div>
+    );
+};
+
+export default Timer;
