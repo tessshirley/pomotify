@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback} from 'react';
 
-const Timer = () => {
+const Timer = ({onModeChange}) => {
     // state declarations with initial values
 
     // 25 min converted to seconds 
@@ -26,14 +26,14 @@ const Timer = () => {
             setMode('break');
             // reset timer to break duration
             setTimeLeft(breakTime);
-            // TODO: trigger break music/playlist here
+            if(onModeChange) onModeChange('break');
         } else {
             // if just finished a break:
             setMode('focus');
             setTimeLeft(focusTime);
-            // TODO: trigger break music/playlist here
+            if(onModeChange) onModeChange('focus');
         }
-    }, [mode, focusTime, breakTime]);
+    }, [mode, focusTime, breakTime, onModeChange]);
 
     // main timer - runs every time isRunning or timeLeft changes
     useEffect(() => {
