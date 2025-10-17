@@ -16,6 +16,25 @@ const Timer = () => {
     const focusTime = 25 * 60;
     const breakTime = 5 * 60;
 
+    // handles what happens when timer reaches 0
+    const handleTimerComplete = useCallback(() => {
+        // if just finished a focus session...
+        if(mode === 'focus') {
+            // increment completed sessions count
+            setSessionsCompleted(prev => prev + 1);
+            // switch to break mode
+            setMode('break');
+            // reset timer to break duration
+            setTimeLeft(breakTime);
+            // TODO: trigger break music/playlist here
+        } else {
+            // if just finished a break:
+            setMode('focus');
+            setTimeLeft(focusTime);
+            // TODO: trigger break music/playlist here
+        }
+    }, [mode, focusTime, breakTime]);
+
     // main timer - runs every time isRunning or timeLeft changes
     useEffect(() => {
         // will hold interval ID
@@ -35,30 +54,11 @@ const Timer = () => {
         return() => clearInterval(interval);
     }, [isRunning, timeLeft, handleTimerComplete]);
 
-    // handles what happens when timer reaches 0
-    const handleTimerComplete = useCallback(() => {
-        // if just finished a focus session...
-        if(mode === 'focus') {
-            // increment completed sessions count
-            setSessionsCompleted(prev => prev + 1);
-            // switch to break mode
-            setMode('break');
-            // reset timer to break duration
-            setTimerLeft(breakTime);
-            // TODO: trigger break music/playlist here
-        } else {
-            // if just finished a break:
-            setMode('focus');
-            setTimeLeft(focusTime);
-            // TODO: trigger break music/playlist here
-        }
-    }, [mode, focusTime, breakTime]);
-
     // timer control functions //
     // start the timer
-    const startTimeer = () => setIsRunning(true);
+    const startTimer = () => setIsRunning(true);
     // pause the timer
-    const pauseTimer = () => setIsRunning(flase);
+    const pauseTimer = () => setIsRunning(false);
     // stop the timer 
     const resetTimer = () => {
         setIsRunning(false);
