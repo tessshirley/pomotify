@@ -79,7 +79,7 @@ const Timer = ({onModeChange}) => {
     return (
         <div className='timer-container text-center'>
             {/* display current mode (focus time/break time)*/}
-            <div className={'mode-indicator ${mode} mb-4'}>
+            <div className="mode-indicator ${mode} mb-">
                 {mode === 'focus' ? 'Focus Time' : 'Break Time'}
             </div>
 

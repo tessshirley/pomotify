@@ -62,7 +62,7 @@ export const useSpotifyPlayer = (accessToken) => {
         player.disconnect();
       }
     };
-  }, [accessToken]);
+  }, [player, accessToken]);
 
   // Play a specific playlist
   const playPlaylist = useCallback(async (playlistId) => {
