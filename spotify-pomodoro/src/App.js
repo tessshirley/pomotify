@@ -9,8 +9,19 @@ const FOCUS_PLAYLIST_ID = '37i9dQZF1DX5UfG5FJqDQC'; // Spotify's "Deep Focus" pl
 const BREAK_PLAYLIST_ID = '37i9dQZF1DX4sWSpwq3LiO'; // Spotify's "Peaceful Piano" playlist
 
 function App() {
-  const { accessToken, isAuthenticated, login, logout } = useSpotifyAuth();
+  const { accessToken, isAuthenticated, login, logout, error } = useSpotifyAuth();
   const { currentTrack, isPlaying, playerReady, playPlaylist, togglePlayback } = useSpotifyPlayer(accessToken);
+
+  // Debug: Log environment variables and auth state
+  React.useEffect(() => {
+    console.log('=== SPOTIFY AUTH DEBUG ===');
+    console.log('REACT_APP_SPOTIFY_CLIENT_ID:', process.env.REACT_APP_SPOTIFY_CLIENT_ID);
+    console.log('REACT_APP_REDIRECT_URI:', process.env.REACT_APP_REDIRECT_URI);
+    console.log('Access Token:', accessToken);
+    console.log('Authenticated:', isAuthenticated);
+    console.log('Error:', error);
+    console.log('========================');
+  }, [accessToken, isAuthenticated, error]);
 
   // Handle mode changes from Timer
   const handleModeChange = (newMode) => {
@@ -32,6 +43,18 @@ function App() {
       <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
         <div className="text-center max-w-md mx-4">
           <h1 className="text-4xl font-bold mb-6">Spotify Pomodoro Timer</h1>
+          
+          {/* Debug info on login screen */}
+          {error && (
+            <div className="bg-red-900 border border-red-700 p-4 rounded mb-4">
+              <strong className="text-red-200">Error:</strong>
+              <div className="text-red-300 text-sm mt-1">{error}</div>
+              <div className="text-red-400 text-xs mt-2">
+                Check your .env file and Spotify Dashboard settings
+              </div>
+            </div>
+          )}
+          
           <p className="text-gray-300 mb-8">
             Connect your Spotify account to play focus music during work sessions and relaxing music during breaks.
           </p>
@@ -41,6 +64,14 @@ function App() {
           >
             Login with Spotify
           </button>
+          
+          {/* Debug info box */}
+          <div className="mt-6 p-3 bg-gray-800 rounded text-left">
+            <div className="text-sm text-gray-400">
+              <div>Client ID: {process.env.REACT_APP_SPOTIFY_CLIENT_ID ? '✅ Loaded' : '❌ Missing'}</div>
+              <div>Redirect URI: {process.env.REACT_APP_REDIRECT_URI || '❌ Missing'}</div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -107,4 +138,3 @@ function App() {
 }
 
 export default App;
-

@@ -13,10 +13,10 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "HOST=127.0.0.1 react-scripts start",
     "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "server": "HOST=127.0.0.1 node server",
+    "dev": "npm-run-all --parallel server start"
   },
   "eslintConfig": {
     "extends": [
