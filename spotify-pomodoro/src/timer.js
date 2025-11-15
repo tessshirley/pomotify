@@ -1,128 +1,253 @@
-import { useState, useEffect, useCallback} from 'react';
+import React from 'react';
 
-const Timer = ({onModeChange}) => {
-    // state declarations with initial values
+const FOCUS_PLAYLIST_ID = '37i9dQZF1DX5UfG5FJqDQC';
+const BREAK_PLAYLIST_ID = '37i9dQZF1DX4sWSpwq3LiO';
 
-    // 25 min converted to seconds 
-    const[timeLeft, setTimeLeft] = useState(25 * 60);
-    // tracks if timer is currently running
-    const[isRunning, setIsRunning] = useState(false);
-    // current mode: 'focus or 'break'
-    const[mode, setMode] = useState('focus');
-    //count of completed focus sessions
-    const[sessionsCompleted, setSessionsCompleted] = useState(0);
+// Custom hook for timer logic
+export const useTimer = (initialTime) => {
+  const [timeLeft, setTimeLeft] = React.useState(initialTime);
+  const [isRunning, setIsRunning] = React.useState(false);
 
-    //timer duration constants in seconds
-    const focusTime = 25 * 60;
-    const breakTime = 5 * 60;
+  React.useEffect(() => {
+    let interval = null;
 
-    // handles what happens when timer reaches 0
-    const handleTimerComplete = useCallback(() => {
-        // if just finished a focus session...
-        if(mode === 'focus') {
-            // increment completed sessions count
-            setSessionsCompleted(prev => prev + 1);
-            // switch to break mode
-            setMode('break');
-            // reset timer to break duration
-            setTimeLeft(breakTime);
-            if(onModeChange) onModeChange('break');
-        } else {
-            // if just finished a break:
-            setMode('focus');
-            setTimeLeft(focusTime);
-            if(onModeChange) onModeChange('focus');
-        }
-    }, [mode, focusTime, breakTime, onModeChange]);
+    if (isRunning && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft(time => time - 1);
+      }, 1000);
+    }
 
-    // main timer - runs every time isRunning or timeLeft changes
-    useEffect(() => {
-        // will hold interval ID
-        let interval = null;
+    return () => clearInterval(interval);
+  }, [isRunning, timeLeft]);
 
-        // only run the timer if it's running AND there's time left
-        if (isRunning && timeLeft > 0) {
-            // set up an interval that decreases timeLeft by 1 every second
-            interval = setInterval(() => {
-                setTimeLeft(time => time - 1);
-            }, 1000);
-        } else if (timeLeft === 0) {
-            // timer has reached 0
-            handleTimerComplete();
-        }
-        // this prevents memory leaks by clearing the interval
-        return() => clearInterval(interval);
-    }, [isRunning, timeLeft, handleTimerComplete]);
+  const start = () => setIsRunning(true);
+  const pause = () => setIsRunning(false);
+  const reset = (newTime) => {
+    setIsRunning(false);
+    setTimeLeft(newTime);
+  };
 
-    // timer control functions //
-    // start the timer
-    const startTimer = () => setIsRunning(true);
-    // pause the timer
-    const pauseTimer = () => setIsRunning(false);
-    // stop the timer 
-    const resetTimer = () => {
-        setIsRunning(false);
-        // reset time based on current mode
-        setTimeLeft(mode === 'focus' ? focusTime : breakTime);
-    };
-
-    // format seconds into mm:ss display
-    const formatTime = (seconds) => {
-        // calculate minutes 
-        const mins = Math.floor(seconds / 60);
-        // calculate remaining seconds
-        const secs = seconds % 60;
-        //format as mm:ss
-        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    };
-
-    return (
-        <div className='timer-container text-center'>
-            {/* display current mode (focus time/break time)*/}
-            <div className="mode-indicator ${mode} mb-">
-                {mode === 'focus' ? 'Focus Time' : 'Break Time'}
-            </div>
-
-            {/* main timer display - large monospace font for readability */}
-            <div className="text-6xl font-mono mb-6">
-                {formatTime(timeLeft)}
-            </div>
-
-            {/* timer control buttons */}
-            <div className="controls space-x-4">
-                {/* start button - disabled when timer is already running */}
-                <button
-                    onClick={startTimer}
-                    disabled={isRunning}
-                    className="bg-green-500 text-white px-4 py-2 rounded disabled:bg-gray-400"
-                >
-                    start
-                </button>
-
-                {/* pause button - disabled when timer isn't running */}
-                <button
-                    onClick={pauseTimer}
-                    disabled={!isRunning}
-                    className="bg-yellow-500 text-white px-4 py-2 rounded disabled:bg-gray-400"
-                >
-                    pause
-                </button>
-
-                {/* reset button - always enabled */}
-                <button
-                    onClick={resetTimer}
-                    className="bg-red-500 text-white px-4 py-2 rounded"
-                >
-                    reset
-                </button>
-            </div>
-
-            {/* session counter display */}
-            <div className="sessions mt-4 text-lg">
-                Sessions Completed: {sessionsCompleted}
-            </div>
-        </div>
-    );
+  return { timeLeft, isRunning, start, pause, reset, setTimeLeft };
 };
 
-export default Timer;
+// Format time for display
+export const formatTime = (seconds) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
+
+// Timer display component
+export const TimerDisplay = ({ timeLeft, mode, isTimerRunning }) => {
+  return (
+    <div style={{ 
+      display: 'flex', 
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: '20px'
+    }}>
+      <div style={{ position: 'relative' }}>
+        {/* Timer Display Overlay */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px'
+        }}>
+          {/* Timer Display */}
+          <div style={{
+            color: '#ffffffff',
+            fontSize: '2rem',
+            fontWeight: 'bold',
+            fontFamily: 'monospace'
+          }}>
+            {formatTime(timeLeft)}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Mode selector component
+export const ModeSelector = ({ mode, onModeChange }) => {
+  return (
+    <div style={{ marginBottom: '20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
+        <button
+          onClick={() => onModeChange('focus')}
+          style={{
+            backgroundColor: mode === 'focus' ? '#ef4444' : '#374151',
+            color: 'white',
+            border: 'none',
+            padding: '10px 20px',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            transition: 'background-color 0.2s'
+          }}
+          onMouseOver={(e) => {
+            if (mode !== 'focus') e.target.style.backgroundColor = '#4b5563';
+          }}
+          onMouseOut={(e) => {
+            if (mode !== 'focus') e.target.style.backgroundColor = '#374151';
+          }}
+        >
+          Focus
+        </button>
+        <button
+          onClick={() => onModeChange('break')}
+          style={{
+            backgroundColor: mode === 'break' ? '#10b981' : '#374151',
+            color: 'white',
+            border: 'none',
+            padding: '10px 20px',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            transition: 'background-color 0.2s'
+          }}
+          onMouseOver={(e) => {
+            if (mode !== 'break') e.target.style.backgroundColor = '#4b5563';
+          }}
+          onMouseOut={(e) => {
+            if (mode !== 'break') e.target.style.backgroundColor = '#374151';
+          }}
+        >
+          Break
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Control buttons component
+export const ControlButtons = ({ 
+  isRunning, 
+  onStart, 
+  onPause, 
+  onReset, 
+  sessionsCompleted 
+}) => {
+  return (
+    <div style={{ marginBottom: '30px' }}>
+      {/* Control Buttons */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '16px' }}>
+        <button
+          onClick={onStart}
+          disabled={isRunning}
+          style={{
+            backgroundColor: isRunning ? '#9ca3af' : '#10b981',
+            color: 'white',
+            border: 'none',
+            padding: '10px 20px',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: 'bold',
+            cursor: isRunning ? 'not-allowed' : 'pointer',
+            transition: 'background-color 0.2s'
+          }}
+          onMouseOver={(e) => {
+            if (!isRunning) e.target.style.backgroundColor = '#34d399';
+          }}
+          onMouseOut={(e) => {
+            if (!isRunning) e.target.style.backgroundColor = '#10b981';
+          }}
+        >
+          Start
+        </button>
+
+        <button
+          onClick={onPause}
+          disabled={!isRunning}
+          style={{
+            backgroundColor: !isRunning ? '#9ca3af' : '#f59e0b',
+            color: 'white',
+            border: 'none',
+            padding: '10px 20px',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: 'bold',
+            cursor: !isRunning ? 'not-allowed' : 'pointer',
+            transition: 'background-color 0.2s'
+          }}
+          onMouseOver={(e) => {
+            if (isRunning) e.target.style.backgroundColor = '#fbbf24';
+          }}
+          onMouseOut={(e) => {
+            if (isRunning) e.target.style.backgroundColor = '#f59e0b';
+          }}
+        >
+          Pause
+        </button>
+
+        <button
+          onClick={onReset}
+          style={{
+            backgroundColor: '#ef4444',
+            color: 'white',
+            border: 'none',
+            padding: '10px 20px',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            transition: 'background-color 0.2s'
+          }}
+          onMouseOver={(e) => e.target.style.backgroundColor = '#f87171'}
+          onMouseOut={(e) => e.target.style.backgroundColor = '#ef4444'}
+        >
+          Reset
+        </button>
+      </div>
+
+      {/* Session Counter */}
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ color: '#a0a0a0', fontSize: '14px', marginBottom: '4px' }}>
+          Sessions Completed
+        </div>
+        <div style={{ color: 'white', fontSize: '1.5rem', fontWeight: 'bold' }}>
+          {sessionsCompleted}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Main timer component
+export const Timer = ({
+  mode,
+  timeLeft,
+  isRunning,
+  isTimerRunning,
+  sessionsCompleted,
+  onStart,
+  onPause,
+  onReset,
+  onModeChange
+}) => {
+  return (
+    <>
+      <ModeSelector mode={mode} onModeChange={onModeChange} />
+      <TimerDisplay timeLeft={timeLeft} mode={mode} isTimerRunning={isTimerRunning} />
+      <ControlButtons
+        isRunning={isRunning}
+        onStart={onStart}
+        onPause={onPause}
+        onReset={onReset}
+        sessionsCompleted={sessionsCompleted}
+      />
+    </>
+  );
+};
+
+export { FOCUS_PLAYLIST_ID, BREAK_PLAYLIST_ID };

@@ -1,46 +1,123 @@
 import React from 'react';
-import Timer from './timer.js';
 import { useSpotifyAuth } from './useSpotifyAuth';
 import { useSpotifyPlayer } from './useSpotifyPlayer';
-import './App.css'; // Using your light theme CSS
+import { 
+  Timer, 
+  useTimer, 
+  formatTime,
+  FOCUS_PLAYLIST_ID, 
+  BREAK_PLAYLIST_ID 
+} from './timer';
+import './App.css';
 import logo from './square.png';
-
-const FOCUS_PLAYLIST_ID = '37i9dQZF1DX5UfG5FJqDQC';
-const BREAK_PLAYLIST_ID = '37i9dQZF1DX4sWSpwq3LiO';
+import blanklogo from './blanksquare.png';
 
 function App() {
   const { accessToken, isAuthenticated, login, logout, error } = useSpotifyAuth();
   const { currentTrack, isPlaying, playerReady, playPlaylist, togglePlayback } = useSpotifyPlayer(accessToken);
+  
+  const [skipLogin, setSkipLogin] = React.useState(false);
+  const [isTimerRunning, setIsTimerRunning] = React.useState(false);
+  const [mode, setMode] = React.useState('focus');
+  const [sessionsCompleted, setSessionsCompleted] = React.useState(0);
+
+  // Use the custom timer hook
+  const { timeLeft, isRunning, start, pause, reset, setTimeLeft } = useTimer(
+    mode === 'focus' ? 25 * 60 : 5 * 60
+  );
 
   // Debug logging
   React.useEffect(() => {
     console.log('Auth status:', { isAuthenticated, error, accessToken: accessToken ? 'Present' : 'Missing' });
   }, [accessToken, isAuthenticated, error]);
 
+  // Handle timer completion
+  const handleTimerComplete = React.useCallback(() => {
+    if (mode === 'focus') {
+      setSessionsCompleted(prev => prev + 1);
+      setMode('break');
+      setTimeLeft(5 * 60);
+      if (playerReady) {
+        playPlaylist(BREAK_PLAYLIST_ID);
+      }
+    } else {
+      setMode('focus');
+      setTimeLeft(25 * 60);
+      if (playerReady) {
+        playPlaylist(FOCUS_PLAYLIST_ID);
+      }
+    }
+    pause();
+    setIsTimerRunning(false);
+  }, [mode, playerReady, playPlaylist, setTimeLeft, pause]);
+
+  // Timer countdown effect
+  React.useEffect(() => {
+    let interval = null;
+
+    if (isRunning && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft(time => time - 1);
+      }, 1000);
+    } else if (timeLeft === 0) {
+      handleTimerComplete();
+    }
+
+    return () => clearInterval(interval);
+  }, [isRunning, timeLeft, handleTimerComplete, setTimeLeft]);
+
   // Handle timer mode changes
-  const handleModeChange = (newMode) => {
-    if (!playerReady) return;
+  const handleModeChange = React.useCallback((newMode) => {
+    setMode(newMode);
+    if (!playerReady && !skipLogin) return;
     
-    const playlistId = newMode === 'focus' ? FOCUS_PLAYLIST_ID : BREAK_PLAYLIST_ID;
-    playPlaylist(playlistId);
+    if (playerReady) {
+      const playlistId = newMode === 'focus' ? FOCUS_PLAYLIST_ID : BREAK_PLAYLIST_ID;
+      playPlaylist(playlistId);
+    }
+  }, [playerReady, skipLogin, playPlaylist]);
+
+  const handleSkipLogin = () => {
+    console.log('⏭️ Skipping Spotify login');
+    setSkipLogin(true);
   };
 
+  // Timer control functions
+  const startTimer = () => {
+    start();
+    setIsTimerRunning(true);
+  };
 
-  // Login Screen - Using App.css light theme
-  if (!isAuthenticated) {
+  const pauseTimer = () => {
+    pause();
+    setIsTimerRunning(false);
+  };
+
+  const resetTimer = () => {
+    reset(mode === 'focus' ? 25 * 60 : 5 * 60);
+    setIsTimerRunning(false);
+  };
+
+  const switchMode = (newMode) => {
+    pause();
+    setIsTimerRunning(false);
+    setMode(newMode);
+    setTimeLeft(newMode === 'focus' ? 25 * 60 : 5 * 60);
+    handleModeChange(newMode);
+  };
+
+  // Login Screen
+  if (!isAuthenticated && !skipLogin) {
     return (
       <div className="App">
         <header className="App-header">
           
-          {/* You can add a logo here if you want */}
           <img src={logo} className="App-logo" alt="logo" /> 
           
-          {/* Simple Title */}
           <h1 style={{ color: '#282c34', marginBottom: '20px' }}>
             Focus Timer
           </h1>
           
-          {/* Error Display */}
           {error && (
             <div style={{ 
               backgroundColor: '#ff6b6b', 
@@ -54,16 +131,14 @@ function App() {
             </div>
           )}
           
-          {/* Description */}
           <p style={{ color: '#666', marginBottom: '30px', fontSize: '18px' }}>
             Connect Spotify to enhance your focus sessions
           </p>
           
-          {/* Login Button */}
           <button
             onClick={login}
             style={{
-              backgroundColor: '#1DB954', // Spotify green
+              backgroundColor: '#1DB954',
               color: 'white',
               border: 'none',
               padding: '12px 24px',
@@ -71,12 +146,34 @@ function App() {
               fontSize: '16px',
               fontWeight: 'bold',
               cursor: 'pointer',
-              transition: 'background-color 0.2s'
+              transition: 'background-color 0.2s',
+              marginBottom: '10px',
+              width: '200px'
             }}
             onMouseOver={(e) => e.target.style.backgroundColor = '#1ed760'}
             onMouseOut={(e) => e.target.style.backgroundColor = '#1DB954'}
           >
-            🎵 Login with Spotify
+            Login with Spotify
+          </button>
+          
+          <button
+            onClick={handleSkipLogin}
+            style={{
+              backgroundColor: '#282c34', 
+              color: 'white',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: '8px',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              transition: 'background-color 0.2s',
+              width: '200px'
+            }}
+            onMouseOver={(e) => e.target.style.backgroundColor = '#1b1e23ff'}
+            onMouseOut={(e) => e.target.style.backgroundColor = '#282c34'}
+          >
+            Use without Login
           </button>
 
         </header>
@@ -84,47 +181,185 @@ function App() {
     );
   }
 
-  // Main App (after login) - Keep dark theme for focus mode
+  // Main App
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6">
-      <div className="max-w-md mx-auto">
+    <div style={{
+      minHeight: '100vh',
+      backgroundColor: '#1a1a1a',
+      color: 'white',
+      padding: '20px'
+    }}>
+      <div style={{
+        maxWidth: '500px',
+        margin: '0 auto',
+        textAlign: 'center'
+      }}>
         
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-xl font-medium">Focus Session</h1>
+        {/* Centered Header */}
+        <div style={{ marginBottom: '20px' }}>
+          <h1 style={{ 
+            color: 'white', 
+            marginBottom: '8px',
+            fontSize: '2rem',
+            fontWeight: 'bold'
+          }}>
+            Focus Session
+          </h1>
+          
+          {skipLogin && !isAuthenticated && (
+            <p style={{ 
+              color: '#a0a0a0', 
+              fontSize: '1rem'
+            }}>
+              Using timer without Spotify
+            </p>
+          )}
+        </div>
+
+        {/* Timer Section */}
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: '20px'
+        }}>
+          <div style={{ position: 'relative' }}>
+            {/* Logo that spins :) */}
+            <img 
+              src={blanklogo} 
+              className={`App-logo ${isTimerRunning ? 'spinning' : ''}`}
+              alt="logo" 
+              style={{
+                width: '400px',
+                height: '400px',
+                borderRadius: '8px',
+                opacity: 0.9
+              }}
+            />
+            
+            {/* Timer Display Overlay */}
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
+            }}>
+              {/* Timer Display */}
+              <div style={{
+                color: '#ffffffff',
+                fontSize: '2rem',
+                fontWeight: 'bold',
+                fontFamily: 'monospace'
+              }}>
+                {formatTime(timeLeft)}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Timer Components */}
+        <Timer
+          mode={mode}
+          timeLeft={timeLeft}
+          isRunning={isRunning}
+          isTimerRunning={isTimerRunning}
+          sessionsCompleted={sessionsCompleted}
+          onStart={startTimer}
+          onPause={pauseTimer}
+          onReset={resetTimer}
+          onModeChange={switchMode}
+        />
+
+        {/* Centered Logout Button */}
+        <div style={{ marginBottom: '30px' }}>
           <button
-            onClick={logout}
-            className="text-gray-400 hover:text-white text-sm"
+            onClick={skipLogin ? () => setSkipLogin(false) : logout}
+            style={{
+              backgroundColor: '#333',
+              color: 'white',
+              border: 'none',
+              padding: '10px 20px',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              transition: 'background-color 0.2s'
+            }}
+            onMouseOver={(e) => e.target.style.backgroundColor = '#444'}
+            onMouseOut={(e) => e.target.style.backgroundColor = '#333'}
           >
-            Logout
+            {skipLogin ? 'Back to Login' : 'Logout'}
           </button>
         </div>
 
-        {/* Timer */}
-        <div className="mb-8">
-          <Timer onModeChange={handleModeChange} />
-        </div>
-
-        {/* Now Playing */}
-        {currentTrack && (
-          <div className="bg-gray-800 p-4 rounded-lg">
-            <div className="flex items-center space-x-3">
+        {/* Spotify Player */}
+        {currentTrack && isAuthenticated && (
+          <div style={{ 
+            backgroundColor: '#2d2d2d',
+            padding: '16px',
+            borderRadius: '12px',
+            marginBottom: '16px',
+            textAlign: 'center',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+            maxWidth: '400px',
+            margin: '0 auto 16px auto'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '16px'
+            }}>
               <img 
                 src={currentTrack.album.images[0]?.url} 
                 alt="Album"
-                className="w-12 h-12 rounded"
+                style={{
+                  width: '60px',
+                  height: '60px',
+                  borderRadius: '8px'
+                }}
               />
-              <div className="flex-1 min-w-0">
-                <div className="text-white text-sm font-medium truncate">
+              <div style={{ textAlign: 'left', flex: 1 }}>
+                <div style={{ 
+                  color: 'white', 
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  marginBottom: '4px'
+                }}>
                   {currentTrack.name}
                 </div>
-                <div className="text-gray-400 text-xs truncate">
+                <div style={{ 
+                  color: '#a0a0a0', 
+                  fontSize: '14px'
+                }}>
                   {currentTrack.artists[0]?.name}
                 </div>
               </div>
               <button
                 onClick={togglePlayback}
-                className="bg-green-500 hover:bg-green-600 w-8 h-8 rounded-full flex items-center justify-center text-xs"
+                style={{
+                  backgroundColor: '#1DB954',
+                  color: 'white',
+                  border: 'none',
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseOver={(e) => e.target.style.backgroundColor = '#1ed760'}
+                onMouseOut={(e) => e.target.style.backgroundColor = '#1DB954'}
               >
                 {isPlaying ? '❚❚' : '▶'}
               </button>
@@ -133,12 +368,16 @@ function App() {
         )}
 
         {/* Status Message */}
-        {!playerReady && (
-          <div className="text-center text-gray-500 text-sm mt-4">
+        {!playerReady && isAuthenticated && (
+          <div style={{ 
+            color: '#a0a0a0', 
+            textAlign: 'center',
+            fontSize: '14px',
+            marginTop: '16px'
+          }}>
             Connecting to Spotify...
           </div>
         )}
-
       </div>
     </div>
   );
