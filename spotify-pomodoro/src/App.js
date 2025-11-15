@@ -2,123 +2,129 @@ import React from 'react';
 import Timer from './timer.js';
 import { useSpotifyAuth } from './useSpotifyAuth';
 import { useSpotifyPlayer } from './useSpotifyPlayer';
-import './App.css';
+import './App.css'; // Using your light theme CSS
+import logo from './square.png';
 
-// You can replace these with your own playlist IDs
-const FOCUS_PLAYLIST_ID = '37i9dQZF1DX5UfG5FJqDQC'; // Spotify's "Deep Focus" playlist
-const BREAK_PLAYLIST_ID = '37i9dQZF1DX4sWSpwq3LiO'; // Spotify's "Peaceful Piano" playlist
+const FOCUS_PLAYLIST_ID = '37i9dQZF1DX5UfG5FJqDQC';
+const BREAK_PLAYLIST_ID = '37i9dQZF1DX4sWSpwq3LiO';
 
 function App() {
   const { accessToken, isAuthenticated, login, logout, error } = useSpotifyAuth();
   const { currentTrack, isPlaying, playerReady, playPlaylist, togglePlayback } = useSpotifyPlayer(accessToken);
 
-  // Debug: Log environment variables and auth state
+  // Debug logging
   React.useEffect(() => {
-    console.log('=== SPOTIFY AUTH DEBUG ===');
-    console.log('REACT_APP_SPOTIFY_CLIENT_ID:', process.env.REACT_APP_SPOTIFY_CLIENT_ID);
-    console.log('REACT_APP_REDIRECT_URI:', process.env.REACT_APP_REDIRECT_URI);
-    console.log('Access Token:', accessToken);
-    console.log('Authenticated:', isAuthenticated);
-    console.log('Error:', error);
-    console.log('========================');
+    console.log('Auth status:', { isAuthenticated, error, accessToken: accessToken ? 'Present' : 'Missing' });
   }, [accessToken, isAuthenticated, error]);
 
-  // Handle mode changes from Timer
+  // Handle timer mode changes
   const handleModeChange = (newMode) => {
-    if (!playerReady) {
-      console.log('Player not ready yet');
-      return;
-    }
-
-    if (newMode === 'focus') {
-      playPlaylist(FOCUS_PLAYLIST_ID);
-    } else {
-      playPlaylist(BREAK_PLAYLIST_ID);
-    }
+    if (!playerReady) return;
+    
+    const playlistId = newMode === 'focus' ? FOCUS_PLAYLIST_ID : BREAK_PLAYLIST_ID;
+    playPlaylist(playlistId);
   };
 
-  // Show login screen if not authenticated
+
+  // Login Screen - Using App.css light theme
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
-        <div className="text-center max-w-md mx-4">
-          <h1 className="text-4xl font-bold mb-6">Spotify Pomodoro Timer</h1>
+      <div className="App">
+        <header className="App-header">
           
-          {/* Debug info on login screen */}
+          {/* You can add a logo here if you want */}
+          <img src={logo} className="App-logo" alt="logo" /> 
+          
+          {/* Simple Title */}
+          <h1 style={{ color: '#282c34', marginBottom: '20px' }}>
+            Focus Timer
+          </h1>
+          
+          {/* Error Display */}
           {error && (
-            <div className="bg-red-900 border border-red-700 p-4 rounded mb-4">
-              <strong className="text-red-200">Error:</strong>
-              <div className="text-red-300 text-sm mt-1">{error}</div>
-              <div className="text-red-400 text-xs mt-2">
-                Check your .env file and Spotify Dashboard settings
-              </div>
+            <div style={{ 
+              backgroundColor: '#ff6b6b', 
+              color: 'white', 
+              padding: '12px', 
+              borderRadius: '8px',
+              marginBottom: '20px',
+              fontSize: '16px'
+            }}>
+              {error}
             </div>
           )}
           
-          <p className="text-gray-300 mb-8">
-            Connect your Spotify account to play focus music during work sessions and relaxing music during breaks.
+          {/* Description */}
+          <p style={{ color: '#666', marginBottom: '30px', fontSize: '18px' }}>
+            Connect Spotify to enhance your focus sessions
           </p>
+          
+          {/* Login Button */}
           <button
             onClick={login}
-            className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-full text-lg transition-colors duration-200"
+            style={{
+              backgroundColor: '#1DB954', // Spotify green
+              color: 'white',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: '8px',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              transition: 'background-color 0.2s'
+            }}
+            onMouseOver={(e) => e.target.style.backgroundColor = '#1ed760'}
+            onMouseOut={(e) => e.target.style.backgroundColor = '#1DB954'}
           >
-            Login with Spotify
+            🎵 Login with Spotify
           </button>
-          
-          {/* Debug info box */}
-          <div className="mt-6 p-3 bg-gray-800 rounded text-left">
-            <div className="text-sm text-gray-400">
-              <div>Client ID: {process.env.REACT_APP_SPOTIFY_CLIENT_ID ? '✅ Loaded' : '❌ Missing'}</div>
-              <div>Redirect URI: {process.env.REACT_APP_REDIRECT_URI || '❌ Missing'}</div>
-            </div>
-          </div>
-        </div>
+
+        </header>
       </div>
     );
   }
 
+  // Main App (after login) - Keep dark theme for focus mode
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-4">
+    <div className="min-h-screen bg-gray-900 text-white p-6">
       <div className="max-w-md mx-auto">
+        
         {/* Header */}
-        <header className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold">Pomodoro Focus</h1>
-          <div className="flex items-center space-x-4">
-            {playerReady && (
-              <span className="text-green-400 text-sm">✓ Player Ready</span>
-            )}
-            <button
-              onClick={logout}
-              className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded text-sm transition-colors"
-            >
-              Logout
-            </button>
-          </div>
-        </header>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-xl font-medium">Focus Session</h1>
+          <button
+            onClick={logout}
+            className="text-gray-400 hover:text-white text-sm"
+          >
+            Logout
+          </button>
+        </div>
 
         {/* Timer */}
-        <Timer onModeChange={handleModeChange} />
+        <div className="mb-8">
+          <Timer onModeChange={handleModeChange} />
+        </div>
 
         {/* Now Playing */}
         {currentTrack && (
-          <div className="mt-8 p-4 bg-gray-800 rounded-lg">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <img 
-                  src={currentTrack.album.images[0]?.url} 
-                  alt={currentTrack.album.name}
-                  className="w-14 h-14 rounded"
-                />
-                <div>
-                  <div className="font-semibold text-white">{currentTrack.name}</div>
-                  <div className="text-gray-400 text-sm">
-                    {currentTrack.artists.map(artist => artist.name).join(', ')}
-                  </div>
+          <div className="bg-gray-800 p-4 rounded-lg">
+            <div className="flex items-center space-x-3">
+              <img 
+                src={currentTrack.album.images[0]?.url} 
+                alt="Album"
+                className="w-12 h-12 rounded"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="text-white text-sm font-medium truncate">
+                  {currentTrack.name}
+                </div>
+                <div className="text-gray-400 text-xs truncate">
+                  {currentTrack.artists[0]?.name}
                 </div>
               </div>
               <button
                 onClick={togglePlayback}
-                className="bg-green-500 hover:bg-green-600 w-10 h-10 rounded-full flex items-center justify-center transition-colors"
+                className="bg-green-500 hover:bg-green-600 w-8 h-8 rounded-full flex items-center justify-center text-xs"
               >
                 {isPlaying ? '❚❚' : '▶'}
               </button>
@@ -126,12 +132,13 @@ function App() {
           </div>
         )}
 
-        {/* Player Status */}
+        {/* Status Message */}
         {!playerReady && (
-          <div className="mt-4 p-3 bg-yellow-900 text-yellow-200 rounded text-sm">
-            Loading Spotify player... Make sure Spotify is open on one of your devices.
+          <div className="text-center text-gray-500 text-sm mt-4">
+            Connecting to Spotify...
           </div>
         )}
+
       </div>
     </div>
   );

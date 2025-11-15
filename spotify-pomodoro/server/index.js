@@ -4,11 +4,20 @@ const cors = require('cors')
 const dotenv = require('dotenv');
 
 const port = 5001
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000' // ADD THIS
 
 dotenv.config()
 
 var spotify_client_id = process.env.REACT_APP_SPOTIFY_CLIENT_ID
 var spotify_client_secret = process.env.REACT_APP_SPOTIFY_CLIENT_SECRET
+
+// Validate environment variables
+if (!spotify_client_id || !spotify_client_secret) {
+  console.error('❌ MISSING ENVIRONMENT VARIABLES:');
+  console.error('REACT_APP_SPOTIFY_CLIENT_ID:', spotify_client_id ? '✓' : '✗');
+  console.error('REACT_APP_SPOTIFY_CLIENT_SECRET:', spotify_client_secret ? '✓' : '✗');
+  process.exit(1);
+}
 
 var app = express();
 
@@ -28,6 +37,8 @@ var generateRandomString = function (length) {
 };
 
 app.get('/auth/login', (req, res) => {
+  console.log('🚀 Starting Spotify authentication flow...');
+  
   var scope = "streaming user-read-email user-read-private user-read-playback-state user-modify-playback-state"
   var state = generateRandomString(16);
 
@@ -35,22 +46,39 @@ app.get('/auth/login', (req, res) => {
     response_type: "code",
     client_id: spotify_client_id,
     scope: scope,
-    redirect_uri: "http://127.0.0.1:5001/auth/callback",  // Points to backend
+    redirect_uri: "http://127.0.0.1:5001/auth/callback",
     state: state
   })
 
+  console.log('🔗 Redirecting to Spotify authorization...');
   res.redirect('https://accounts.spotify.com/authorize/?' + auth_query_parameters.toString());
 })
 
 app.get('/auth/callback', (req, res) => {
+  console.log('📥 Received callback from Spotify');
+  console.log('Query params:', req.query);
+  
   var code = req.query.code;
+  var state = req.query.state;
+  var error = req.query.error;
+
+  if (error) {
+    console.error('❌ Spotify returned error:', error);
+    return res.redirect(`${FRONTEND_URL}/?error=spotify_${error}`);
+  }
+
+  if (!code) {
+    console.error('❌ No authorization code received');
+    return res.redirect(`${FRONTEND_URL}/?error=no_code`);
+  }
+
   console.log('✅ Received authorization code from Spotify');
 
   var authOptions = {
     url: 'https://accounts.spotify.com/api/token',
     form: {
       code: code,
-      redirect_uri: "http://127.0.0.1:5001/auth/callback",  // Points to backend
+      redirect_uri: "http://127.0.0.1:5001/auth/callback",
       grant_type: 'authorization_code'
     },
     headers: {
@@ -64,17 +92,23 @@ app.get('/auth/callback', (req, res) => {
     if (!error && response.statusCode === 200) {
       var access_token = body.access_token;
       console.log('✅ Successfully got access token!');
-      // Redirect back to React app with token
-      res.redirect('http://127.0.0.1:3001/?access_token=' + access_token);
+      console.log('🔗 Redirecting to frontend with token...');
+      
+      // Redirect to FRONTEND with token
+      res.redirect(`${FRONTEND_URL}/?access_token=${access_token}`);
     } else {
-      console.error('❌ Error getting token:', error || body);
-      res.redirect('http://127.0.0.1:3001/?error=auth_failed');
+      console.error('❌ Error getting token from Spotify:');
+      console.error('Status:', response?.statusCode);
+      console.error('Error:', error);
+      console.error('Body:', body);
+      
+      const errorMessage = body?.error || 'token_failed';
+      res.redirect(`${FRONTEND_URL}/?error=${errorMessage}`);
     }
   });
 })
 
 app.get('/auth/token', (req, res) => {
-  // Simple token endpoint
   res.json({ 
     access_token: req.query.access_token || '',
     status: 'success'
@@ -83,11 +117,30 @@ app.get('/auth/token', (req, res) => {
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ status: 'OK', port: port });
+  res.json({ 
+    status: 'OK', 
+    port: port,
+    client_id_loaded: !!spotify_client_id,
+    client_secret_loaded: !!spotify_client_secret,
+    frontend_url: FRONTEND_URL
+  });
+})
+
+// Debug endpoint to check environment
+app.get('/debug', (req, res) => {
+  res.json({
+    spotify_client_id: spotify_client_id ? '✓ Loaded' : '✗ Missing',
+    spotify_client_secret: spotify_client_secret ? '✓ Loaded' : '✗ Missing',
+    frontend_url: FRONTEND_URL,
+    backend_port: port
+  });
 })
 
 app.listen(port, () => {
   console.log(`🎯 Backend server listening at http://127.0.0.1:${port}`);
   console.log(`🔑 Spotify Client ID: ${spotify_client_id ? '✓ Loaded' : '✗ Missing'}`);
-  console.log(`🌐 Health check: http://127.0.0.1:${port}/health`);
+  console.log(`🔐 Spotify Client Secret: ${spotify_client_secret ? '✓ Loaded' : '✗ Missing'}`);
+  console.log(`🌐 Frontend URL: ${FRONTEND_URL}`);
+  console.log(`🏥 Health check: http://127.0.0.1:${port}/health`);
+  console.log(`🐛 Debug info: http://127.0.0.1:${port}/debug`);
 })
