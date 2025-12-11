@@ -51,8 +51,8 @@ In order to test this project, we used a combination of manual button presses an
 
 # Division of Tasks
 Below is the list of tasks worked on by both members of the group. Please note that additional tasks, such as research, documentation, and testing were performed by both parties. 
- Libby: Graphic design, link to Spotify backend
- Tess: Clock and timer functions, Front Page
+ ### Libby: Graphic design, link to Spotify backend 
+ ### Tess: Clock and timer functions, Front Page 
 
 
 
