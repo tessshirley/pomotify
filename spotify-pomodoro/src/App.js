@@ -6,7 +6,9 @@ import {
   useTimer, 
   formatTime,
   FOCUS_PLAYLIST_ID, 
-  BREAK_PLAYLIST_ID 
+  BREAK_PLAYLIST_ID,
+  MODE,
+  MODE_TIMES 
 } from './timer';
 import './App.css';
 import logo from './square.png';
@@ -18,12 +20,24 @@ function App() {
   
   const [skipLogin, setSkipLogin] = React.useState(false);
   const [isTimerRunning, setIsTimerRunning] = React.useState(false);
-  const [mode, setMode] = React.useState('focus');
+  const [mode, setMode] = React.useState(MODE.FOCUS);
   const [sessionsCompleted, setSessionsCompleted] = React.useState(0);
 
+  // Create music controls object
+  const musicControls = {
+    playerReady,
+    isAuthenticated,
+    skipLogin,
+    playPlaylist,
+    togglePlayback,
+    isPlaying
+  };
+  
   // Use the custom timer hook
   const { timeLeft, isRunning, start, pause, reset, setTimeLeft } = useTimer(
-    mode === 'focus' ? 25 * 60 : 5 * 60
+    MODE_TIMES[mode],
+    mode,
+    musicControls
   );
 
   // Debug logging
@@ -31,25 +45,43 @@ function App() {
     console.log('Auth status:', { isAuthenticated, error, accessToken: accessToken ? 'Present' : 'Missing' });
   }, [accessToken, isAuthenticated, error]);
 
-  // Handle timer completion
-  const handleTimerComplete = React.useCallback(() => {
-    if (mode === 'focus') {
-      setSessionsCompleted(prev => prev + 1);
-      setMode('break');
-      setTimeLeft(5 * 60);
-      if (playerReady) {
-        playPlaylist(BREAK_PLAYLIST_ID);
-      }
-    } else {
-      setMode('focus');
-      setTimeLeft(25 * 60);
-      if (playerReady) {
+  // auto
+  React.useEffect(() => {
+    if (playerReady && isAuthenticated && !skipLogin) {
+      console.log('🎵 Player is ready, starting focus playlist...');
+      // Small delay to ensure player is fully ready
+      const timer = setTimeout(() => {
         playPlaylist(FOCUS_PLAYLIST_ID);
-      }
+      }, 1000);
+      return () => clearTimeout(timer);
     }
-    pause();
-    setIsTimerRunning(false);
-  }, [mode, playerReady, playPlaylist, setTimeLeft, pause]);
+  }, [playerReady, isAuthenticated, skipLogin, playPlaylist]);
+
+  
+
+  
+
+
+
+    // Handle timer completion
+    const handleTimerComplete = React.useCallback(() => {
+      if (mode === MODE.FOCUS) {
+        setSessionsCompleted(prev => prev + 1);
+        setMode(MODE.BREAK);
+        setTimeLeft(MODE_TIMES[MODE.BREAK]);
+        if (playerReady && isAuthenticated && !skipLogin) {
+          playPlaylist(BREAK_PLAYLIST_ID);
+        }
+      } else {
+        setMode(MODE.FOCUS);
+        setTimeLeft(MODE_TIMES[MODE.FOCUS]);
+        if (playerReady && isAuthenticated && !skipLogin) {
+          playPlaylist(FOCUS_PLAYLIST_ID);
+        }
+      }
+      pause();
+      setIsTimerRunning(false);
+    } , [mode, playerReady, isAuthenticated, skipLogin, playPlaylist, setTimeLeft, pause]);
 
   // Timer countdown effect
   React.useEffect(() => {
@@ -99,12 +131,12 @@ function App() {
   };
 
   const switchMode = (newMode) => {
-    pause();
-    setIsTimerRunning(false);
-    setMode(newMode);
-    setTimeLeft(newMode === 'focus' ? 25 * 60 : 5 * 60);
-    handleModeChange(newMode);
-  };
+  pause();
+  setIsTimerRunning(false);
+  setMode(newMode);
+  setTimeLeft(MODE_TIMES[newMode]);
+  handleModeChange(newMode);
+};
 
   // Login Screen
   if (!isAuthenticated && !skipLogin) {
@@ -115,7 +147,7 @@ function App() {
           <img src={logo} className="App-logo" alt="logo" /> 
           
           <h1 style={{ color: '#282c34', marginBottom: '20px' }}>
-            Focus Timer
+            welcome to pomotify!
           </h1>
           
           {error && (
@@ -132,7 +164,7 @@ function App() {
           )}
           
           <p style={{ color: '#666', marginBottom: '30px', fontSize: '18px' }}>
-            Connect Spotify to enhance your focus sessions
+            Connect Spotify to enhance your sessions or use the focus timer on its own!
           </p>
           
           <button
@@ -275,6 +307,7 @@ function App() {
           onPause={pauseTimer}
           onReset={resetTimer}
           onModeChange={switchMode}
+          musicControls={musicControls}
         />
 
         {/* Centered Logout Button */}

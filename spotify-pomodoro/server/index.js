@@ -4,7 +4,7 @@ const cors = require('cors')
 const dotenv = require('dotenv');
 
 const port = 5001
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000' // ADD THIS
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://127.0.0.1:3000' // ADD THIS
 
 dotenv.config()
 

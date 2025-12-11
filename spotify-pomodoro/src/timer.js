@@ -1,10 +1,35 @@
 import React from 'react';
 
-const FOCUS_PLAYLIST_ID = '37i9dQZF1DX5UfG5FJqDQC';
-const BREAK_PLAYLIST_ID = '37i9dQZF1DX4sWSpwq3LiO';
+const FOCUS_PLAYLIST_ID = '1hC5iQAWwA9KhMBdc6umos';
+const BREAK_PLAYLIST_ID = '1l8lDo6c0DBRHTNaZC4JT8';
 
-// Custom hook for timer logic
-export const useTimer = (initialTime) => {
+// Mode constants
+export const MODE = {
+  FOCUS: 'focus',
+  BREAK: 'break'
+};
+
+// Mode time constants (in seconds)
+export const MODE_TIMES = {
+  [MODE.FOCUS]: 25 * 60,  // 25 minutes
+  [MODE.BREAK]: 5 * 60    // 5 minutes
+};
+
+// Mode display names
+export const MODE_DISPLAY_NAMES = {
+  [MODE.FOCUS]: 'Focus',
+  [MODE.BREAK]: 'Break'
+};
+
+// Mode colors
+export const MODE_COLORS = {
+  [MODE.FOCUS]: '#ef4444', // red
+  [MODE.BREAK]: '#10b981'  // green
+};
+
+// Custom hook for timer logic with music integration
+export const useTimer = (initialTime, mode, musicControls = {}) => {
+  const { playerReady, isAuthenticated, skipLogin, playPlaylist, togglePlayback, isPlaying } = musicControls;
   const [timeLeft, setTimeLeft] = React.useState(initialTime);
   const [isRunning, setIsRunning] = React.useState(false);
 
@@ -20,11 +45,33 @@ export const useTimer = (initialTime) => {
     return () => clearInterval(interval);
   }, [isRunning, timeLeft]);
 
-  const start = () => setIsRunning(true);
-  const pause = () => setIsRunning(false);
+  const start = () => {
+    setIsRunning(true);
+    // Auto-play music when timer starts
+    if (playerReady && isAuthenticated && !skipLogin) {
+      console.log('🎵 Timer started - playing music');
+      const playlistId = mode === MODE.FOCUS ? FOCUS_PLAYLIST_ID : BREAK_PLAYLIST_ID;
+      playPlaylist(playlistId);
+    }
+  };
+
+  const pause = () => {
+    setIsRunning(false);
+    // Auto-pause music when timer pauses
+    if (playerReady && isAuthenticated && !skipLogin && isPlaying) {
+      console.log('⏸️ Timer paused - pausing music');
+      togglePlayback();
+    }
+  };
+
   const reset = (newTime) => {
     setIsRunning(false);
     setTimeLeft(newTime);
+    // Stop music when timer resets
+    if (playerReady && isAuthenticated && !skipLogin && isPlaying) {
+      console.log('🔄 Timer reset - pausing music');
+      togglePlayback();
+    }
   };
 
   return { timeLeft, isRunning, start, pause, reset, setTimeLeft };
@@ -76,15 +123,27 @@ export const TimerDisplay = ({ timeLeft, mode, isTimerRunning }) => {
   );
 };
 
-// Mode selector component
-export const ModeSelector = ({ mode, onModeChange }) => {
+// Mode selector component with music integration
+export const ModeSelector = ({ mode, onModeChange, musicControls = {} }) => {
+  const { playerReady, isAuthenticated, skipLogin, playPlaylist } = musicControls;
+
+  const handleModeChange = (newMode) => {
+    onModeChange(newMode);
+    // Auto-play music when switching modes
+    if (playerReady && isAuthenticated && !skipLogin) {
+      const playlistId = newMode === MODE.FOCUS ? FOCUS_PLAYLIST_ID : BREAK_PLAYLIST_ID;
+      console.log(`🔄 Switching to ${MODE_DISPLAY_NAMES[newMode]} mode - playing music`);
+      playPlaylist(playlistId);
+    }
+  };
+
   return (
     <div style={{ marginBottom: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
         <button
-          onClick={() => onModeChange('focus')}
+          onClick={() => handleModeChange(MODE.FOCUS)}
           style={{
-            backgroundColor: mode === 'focus' ? '#ef4444' : '#374151',
+            backgroundColor: mode === MODE.FOCUS ? MODE_COLORS[MODE.FOCUS] : '#374151',
             color: 'white',
             border: 'none',
             padding: '10px 20px',
@@ -95,18 +154,18 @@ export const ModeSelector = ({ mode, onModeChange }) => {
             transition: 'background-color 0.2s'
           }}
           onMouseOver={(e) => {
-            if (mode !== 'focus') e.target.style.backgroundColor = '#4b5563';
+            if (mode !== MODE.FOCUS) e.target.style.backgroundColor = '#4b5563';
           }}
           onMouseOut={(e) => {
-            if (mode !== 'focus') e.target.style.backgroundColor = '#374151';
+            if (mode !== MODE.FOCUS) e.target.style.backgroundColor = '#374151';
           }}
         >
-          Focus
+          {MODE_DISPLAY_NAMES[MODE.FOCUS]}
         </button>
         <button
-          onClick={() => onModeChange('break')}
+          onClick={() => handleModeChange(MODE.BREAK)}
           style={{
-            backgroundColor: mode === 'break' ? '#10b981' : '#374151',
+            backgroundColor: mode === MODE.BREAK ? MODE_COLORS[MODE.BREAK] : '#374151',
             color: 'white',
             border: 'none',
             padding: '10px 20px',
@@ -117,33 +176,51 @@ export const ModeSelector = ({ mode, onModeChange }) => {
             transition: 'background-color 0.2s'
           }}
           onMouseOver={(e) => {
-            if (mode !== 'break') e.target.style.backgroundColor = '#4b5563';
+            if (mode !== MODE.BREAK) e.target.style.backgroundColor = '#4b5563';
           }}
           onMouseOut={(e) => {
-            if (mode !== 'break') e.target.style.backgroundColor = '#374151';
+            if (mode !== MODE.BREAK) e.target.style.backgroundColor = '#374151';
           }}
         >
-          Break
+          {MODE_DISPLAY_NAMES[MODE.BREAK]}
         </button>
       </div>
     </div>
   );
 };
 
-// Control buttons component
+// Control buttons component with music integration
 export const ControlButtons = ({ 
   isRunning, 
   onStart, 
   onPause, 
   onReset, 
-  sessionsCompleted 
+  sessionsCompleted,
+  musicControls = {}
 }) => {
+  const { playerReady, isAuthenticated, skipLogin, isPlaying } = musicControls;
+
+  const handleStart = () => {
+    onStart();
+    // Music control is now handled in the useTimer hook
+  };
+
+  const handlePause = () => {
+    onPause();
+    // Music control is now handled in the useTimer hook
+  };
+
+  const handleReset = () => {
+    onReset();
+    // Music control is now handled in the useTimer hook
+  };
+
   return (
     <div style={{ marginBottom: '30px' }}>
       {/* Control Buttons */}
       <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '16px' }}>
         <button
-          onClick={onStart}
+          onClick={handleStart}
           disabled={isRunning}
           style={{
             backgroundColor: isRunning ? '#9ca3af' : '#10b981',
@@ -167,7 +244,7 @@ export const ControlButtons = ({
         </button>
 
         <button
-          onClick={onPause}
+          onClick={handlePause}
           disabled={!isRunning}
           style={{
             backgroundColor: !isRunning ? '#9ca3af' : '#f59e0b',
@@ -191,7 +268,7 @@ export const ControlButtons = ({
         </button>
 
         <button
-          onClick={onReset}
+          onClick={handleReset}
           style={{
             backgroundColor: '#ef4444',
             color: 'white',
@@ -223,7 +300,7 @@ export const ControlButtons = ({
   );
 };
 
-// Main timer component
+// Main timer component with music integration
 export const Timer = ({
   mode,
   timeLeft,
@@ -233,18 +310,28 @@ export const Timer = ({
   onStart,
   onPause,
   onReset,
-  onModeChange
+  onModeChange,
+  musicControls = {} // Add music controls prop
 }) => {
   return (
     <>
-      <ModeSelector mode={mode} onModeChange={onModeChange} />
-      <TimerDisplay timeLeft={timeLeft} mode={mode} isTimerRunning={isTimerRunning} />
+      <ModeSelector 
+        mode={mode} 
+        onModeChange={onModeChange} 
+        musicControls={musicControls}
+      />
+      <TimerDisplay 
+        timeLeft={timeLeft} 
+        mode={mode} 
+        isTimerRunning={isTimerRunning} 
+      />
       <ControlButtons
         isRunning={isRunning}
         onStart={onStart}
         onPause={onPause}
         onReset={onReset}
         sessionsCompleted={sessionsCompleted}
+        musicControls={musicControls}
       />
     </>
   );
