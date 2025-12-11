@@ -6,6 +6,8 @@ This project utilizes Spotify's open source development platform and web playbac
 In order to run it, you will need to create a development account and create a .env file with the 
 client secret, redirect uri, and client id. You will also need to add the redirect uri to the Spotify project. Then you will be able to run the software using the following commands. 
 
+# Mission Statement
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
@@ -46,6 +48,11 @@ In order to test this project, we used a combination of manual button presses an
 ### Note: you must have a valid Spotify premium subscription and have added the user to the list of users in the Spotify developer backend
 6. Repeat the same testing as before, this time paying attention to make sure the music pauses and plays on command and that the playlist switches over when it should between break and study time
 7. Logout
+
+# Division of Tasks
+Below is the list of tasks worked on by both members of the group. Please note that additional tasks, such as research, documentation, and testing were performed by both parties. 
+ Libby: Graphic design, link to Spotify backend
+ Tess: Clock and timer functions, Front Page
 
 
 
