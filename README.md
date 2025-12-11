@@ -8,6 +8,10 @@ client secret, redirect uri, and client id. You will also need to add the redire
 
 # Mission Statement
 
+**Pomotify harmonizes productivity and pleasure by pairing the Pomodoro technique with your Spotify library. Automatically curating focus music for deep work and energizing beats for refreshing breaks.**
+
+The right music at the right time can help improve your workflow. Pomotify eliminates the friction between time management and music selection, creating seamless work/rest cycles that adapt to your musical preferences. 
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
