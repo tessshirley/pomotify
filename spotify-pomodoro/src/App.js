@@ -57,12 +57,6 @@ function App() {
     }
   }, [playerReady, isAuthenticated, skipLogin, playPlaylist]);
 
-  
-
-  
-
-
-
     // Handle timer completion
     const handleTimerComplete = React.useCallback(() => {
       if (mode === MODE.FOCUS) {
@@ -110,7 +104,7 @@ function App() {
   }, [playerReady, skipLogin, playPlaylist]);
 
   const handleSkipLogin = () => {
-    console.log('⏭️ Skipping Spotify login');
+    console.log('Skipping Spotify login');
     setSkipLogin(true);
   };
 

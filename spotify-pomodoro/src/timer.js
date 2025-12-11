@@ -49,7 +49,7 @@ export const useTimer = (initialTime, mode, musicControls = {}) => {
     setIsRunning(true);
     // Auto-play music when timer starts
     if (playerReady && isAuthenticated && !skipLogin) {
-      console.log('🎵 Timer started - playing music');
+      console.log('Timer started - playing music');
       const playlistId = mode === MODE.FOCUS ? FOCUS_PLAYLIST_ID : BREAK_PLAYLIST_ID;
       playPlaylist(playlistId);
     }
@@ -59,7 +59,7 @@ export const useTimer = (initialTime, mode, musicControls = {}) => {
     setIsRunning(false);
     // Auto-pause music when timer pauses
     if (playerReady && isAuthenticated && !skipLogin && isPlaying) {
-      console.log('⏸️ Timer paused - pausing music');
+      console.log('Timer paused - pausing music');
       togglePlayback();
     }
   };
@@ -69,7 +69,7 @@ export const useTimer = (initialTime, mode, musicControls = {}) => {
     setTimeLeft(newTime);
     // Stop music when timer resets
     if (playerReady && isAuthenticated && !skipLogin && isPlaying) {
-      console.log('🔄 Timer reset - pausing music');
+      console.log(' Timer reset - pausing music');
       togglePlayback();
     }
   };
@@ -132,7 +132,7 @@ export const ModeSelector = ({ mode, onModeChange, musicControls = {} }) => {
     // Auto-play music when switching modes
     if (playerReady && isAuthenticated && !skipLogin) {
       const playlistId = newMode === MODE.FOCUS ? FOCUS_PLAYLIST_ID : BREAK_PLAYLIST_ID;
-      console.log(`🔄 Switching to ${MODE_DISPLAY_NAMES[newMode]} mode - playing music`);
+      console.log(` Switching to ${MODE_DISPLAY_NAMES[newMode]} mode - playing music`);
       playPlaylist(playlistId);
     }
   };

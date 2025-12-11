@@ -13,9 +13,9 @@ var spotify_client_secret = process.env.REACT_APP_SPOTIFY_CLIENT_SECRET
 
 // Validate environment variables
 if (!spotify_client_id || !spotify_client_secret) {
-  console.error('❌ MISSING ENVIRONMENT VARIABLES:');
-  console.error('REACT_APP_SPOTIFY_CLIENT_ID:', spotify_client_id ? '✓' : '✗');
-  console.error('REACT_APP_SPOTIFY_CLIENT_SECRET:', spotify_client_secret ? '✓' : '✗');
+  console.error('MISSING ENVIRONMENT VARIABLES:');
+  console.error('REACT_APP_SPOTIFY_CLIENT_ID:', spotify_client_id ? 'good' : 'bad');
+  console.error('REACT_APP_SPOTIFY_CLIENT_SECRET:', spotify_client_secret ? 'good' : 'bad');
   process.exit(1);
 }
 
@@ -37,7 +37,7 @@ var generateRandomString = function (length) {
 };
 
 app.get('/auth/login', (req, res) => {
-  console.log('🚀 Starting Spotify authentication flow...');
+  console.log('Starting Spotify authentication flow...');
   
   var scope = "streaming user-read-email user-read-private user-read-playback-state user-modify-playback-state"
   var state = generateRandomString(16);
@@ -55,7 +55,7 @@ app.get('/auth/login', (req, res) => {
 })
 
 app.get('/auth/callback', (req, res) => {
-  console.log('📥 Received callback from Spotify');
+  console.log('Received callback from Spotify');
   console.log('Query params:', req.query);
   
   var code = req.query.code;
@@ -63,16 +63,16 @@ app.get('/auth/callback', (req, res) => {
   var error = req.query.error;
 
   if (error) {
-    console.error('❌ Spotify returned error:', error);
+    console.error('Spotify returned error:', error);
     return res.redirect(`${FRONTEND_URL}/?error=spotify_${error}`);
   }
 
   if (!code) {
-    console.error('❌ No authorization code received');
+    console.error(' No authorization code received');
     return res.redirect(`${FRONTEND_URL}/?error=no_code`);
   }
 
-  console.log('✅ Received authorization code from Spotify');
+  console.log('Received authorization code from Spotify');
 
   var authOptions = {
     url: 'https://accounts.spotify.com/api/token',
@@ -91,13 +91,13 @@ app.get('/auth/callback', (req, res) => {
   request.post(authOptions, function(error, response, body) {
     if (!error && response.statusCode === 200) {
       var access_token = body.access_token;
-      console.log('✅ Successfully got access token!');
-      console.log('🔗 Redirecting to frontend with token...');
+      console.log('Successfully got access token!');
+      console.log(' Redirecting to frontend with token...');
       
       // Redirect to FRONTEND with token
       res.redirect(`${FRONTEND_URL}/?access_token=${access_token}`);
     } else {
-      console.error('❌ Error getting token from Spotify:');
+      console.error(' Error getting token from Spotify:');
       console.error('Status:', response?.statusCode);
       console.error('Error:', error);
       console.error('Body:', body);
@@ -129,18 +129,18 @@ app.get('/health', (req, res) => {
 // Debug endpoint to check environment
 app.get('/debug', (req, res) => {
   res.json({
-    spotify_client_id: spotify_client_id ? '✓ Loaded' : '✗ Missing',
-    spotify_client_secret: spotify_client_secret ? '✓ Loaded' : '✗ Missing',
+    spotify_client_id: spotify_client_id ? ' Loaded' : 'Missing',
+    spotify_client_secret: spotify_client_secret ? ' Loaded' : 'Missing',
     frontend_url: FRONTEND_URL,
     backend_port: port
   });
 })
 
 app.listen(port, () => {
-  console.log(`🎯 Backend server listening at http://127.0.0.1:${port}`);
-  console.log(`🔑 Spotify Client ID: ${spotify_client_id ? '✓ Loaded' : '✗ Missing'}`);
-  console.log(`🔐 Spotify Client Secret: ${spotify_client_secret ? '✓ Loaded' : '✗ Missing'}`);
-  console.log(`🌐 Frontend URL: ${FRONTEND_URL}`);
-  console.log(`🏥 Health check: http://127.0.0.1:${port}/health`);
-  console.log(`🐛 Debug info: http://127.0.0.1:${port}/debug`);
+  console.log(` Backend server listening at http://127.0.0.1:${port}`);
+  console.log(` Spotify Client ID: ${spotify_client_id ? ' Loaded' : ' Missing'}`);
+  console.log(` Spotify Client Secret: ${spotify_client_secret ? 'Loaded' : ' Missing'}`);
+  console.log(` Frontend URL: ${FRONTEND_URL}`);
+  console.log(` Health check: http://127.0.0.1:${port}/health`);
+  console.log(` Debug info: http://127.0.0.1:${port}/debug`);
 })
